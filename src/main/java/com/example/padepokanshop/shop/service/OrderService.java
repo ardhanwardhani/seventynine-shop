@@ -1,23 +1,28 @@
 package com.example.padepokanshop.shop.service;
 
+import com.example.padepokanshop.shop.dto.request.OrderCreateRequest;
 import com.example.padepokanshop.shop.dto.request.OrderItemRequest;
 import com.example.padepokanshop.shop.dto.request.OrderUpdateRequest;
+import com.example.padepokanshop.shop.dto.response.OrderSummary;
 import com.example.padepokanshop.shop.model.Customer;
 import com.example.padepokanshop.shop.model.Item;
 import com.example.padepokanshop.shop.model.Order;
+import com.example.padepokanshop.shop.model.OrderItem;
 import com.example.padepokanshop.shop.repository.CustomerRepository;
 import com.example.padepokanshop.shop.repository.ItemRepository;
+import com.example.padepokanshop.shop.repository.OrderItemRepository;
 import com.example.padepokanshop.shop.repository.OrderRepository;
-import net.sf.jasperreports.engine.JRException;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -28,7 +33,11 @@ public class OrderService {
     private CustomerRepository customerRepository;
 
     @Autowired
+    private OrderItemRepository orderItemRepository;
+
+    @Autowired
     private ItemRepository itemRepository;
+
     @Autowired
     private CustomerService customerService;
 
@@ -42,82 +51,133 @@ public class OrderService {
         ));
     }
 
-    public Order createOrder(OrderItemRequest request, Long customerId){
-        Customer customer = customerRepository.findById(customerId).orElseThrow(
-                () -> new RuntimeException("Customer not found")
-        );
+    @Transactional
+    public Order createOrder(OrderCreateRequest request) {
+        try {
+            Optional<Customer> existingCustomer = customerRepository.findById(request.getCustomerId());
+            if (existingCustomer.isPresent()){
+                Order order = new Order();
+                order.setCode(generateOrderCode());
+                order.setOrderDate(new Date());
+                order.setCustomer(existingCustomer.get());
+                Order savedOrder = orderRepository.save(order);
 
-        Item item = itemRepository.findById(request.getItemId()).orElseThrow(
-                () -> new RuntimeException("Item not found")
-        );
+                for (OrderItemRequest itemDTO : request.getItems()) {
+                    Item item = itemRepository.findById(itemDTO.getItemId())
+                            .orElseThrow(() -> new RuntimeException("Item not found"));
 
-        if (item.getStock() < request.getQuantity()){
-            throw new IllegalArgumentException("Insufficient stock for item " + item.getName());
-        }
+                    if (item.getStock() < itemDTO.getQuantity()) {
+                        throw new RuntimeException("Insufficient stock for item: " + item.getName());
+                    }
 
-        item.setStock(item.getStock() - request.getQuantity());
+                    // Kurangi stok item
+                    item.setStock(item.getStock() - itemDTO.getQuantity());
+                    itemRepository.save(item);
 
-        if (item.getStock() == 0){
-            item.setIsAvailable(false);
-        }
+                    OrderItem orderItem = new OrderItem();
+                    orderItem.setOrder(order);
+                    orderItem.setItem(item);
+                    orderItem.setQuantity(itemDTO.getQuantity());
+                    orderItemRepository.save(orderItem);
+                }
 
-        itemRepository.save(item);
-
-        Order newOrder = new Order();
-        newOrder.setCustomer(customer);
-        newOrder.setItem(item);
-        newOrder.setQuantity(request.getQuantity());
-        newOrder.setTotalPrice(request.getQuantity() * item.getPrice());
-        newOrder.setOrderDate(new Date());
-
-        customer.setLastOrderDate(new Date());
-        customerRepository.save(customer);
-
-        return orderRepository.save(newOrder);
-    }
-
-    public List<Order> createBulkOrders(List<OrderItemRequest> requests, Long customerId){
-        List<Order> listOrders = new ArrayList<>();
-
-        for (OrderItemRequest request : requests){
-            try{
-                Order createdOrder = createOrder(request, customerId);
-                listOrders.add(createdOrder);
-            }catch (IllegalArgumentException e){
-                rollbackOrders(listOrders);
-                throw new IllegalArgumentException(e.getMessage());
+                return savedOrder;
+            }else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Customer not found");
             }
-        }
-
-        return listOrders;
-    }
-
-    private void rollbackOrders(List<Order> listOrders){
-        for (Order order : listOrders){
-            Item item = order.getItem();
-            item.setStock(item.getStock() + order.getQuantity());
-            itemRepository.save(item);
+        }catch (Exception e){
+            throw new RuntimeException("Failed to create user: " + e.getMessage(), e);
         }
     }
 
-    public Order updateOrder(Long orderId, OrderUpdateRequest request){
-        Order existingOrder = orderRepository.findById(orderId).orElseThrow(
-                () -> new RuntimeException("Order not found")
-        );
+//    @Transactional
+//    public Order createOrder(OrderCreateRequest request) {
+//        // Ambil customer dari database
+//        Customer customer = customerRepository.findById(request.getCustomerId())
+//                .orElseThrow(() -> new RuntimeException("Customer not found"));
+//
+//        // Buat order baru
+//        Order order = new Order();
+//        order.setCode(generateOrderCode());
+//        order.setOrderDate(new Date());
+//        order.setCustomer(customer);
+//
+//        // Tambahkan item ke order
+//        List<OrderItem> orderItems = new ArrayList<>();
+//        for (OrderItemRequest itemDTO : request.getOrderItems()) {
+//            Item item = itemRepository.findById(itemDTO.getItemId())
+//                    .orElseThrow(() -> new RuntimeException("Item not found"));
+//
+//            if (item.getStock() < itemDTO.getQuantity()) {
+//                throw new RuntimeException("Insufficient stock for item: " + item.getName());
+//            }
+//
+//            // Kurangi stok item
+//            item.setStock(item.getStock() - itemDTO.getQuantity());
+//            itemRepository.save(item);
+//
+//            OrderItem orderItem = new OrderItem();
+//            orderItem.setOrder(order);
+//            orderItem.setItem(item);
+//            orderItem.setQuantity(itemDTO.getQuantity());
+//            orderItems.add(orderItem);
+//        }
+//
+//        // Set order items ke order
+//        order.setOrderItems(orderItems);
+//
+//        // Simpan order ke database
+//        return orderRepository.save(order);
+//    }
 
-        Customer customer = customerRepository.findById(request.getCustomerId()).orElseThrow(
-                () -> new RuntimeException("Customer not found")
-        );
+    @Transactional
+    public Order updateOrder(Long orderId, OrderUpdateRequest request) {
+        // Ambil order dari database
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        Item item = itemRepository.findById(request.getItemId()).orElseThrow(
-                () -> new RuntimeException("Item not found")
-        );
+        // Ambil customer dari database dan update order
+        Customer customer = customerRepository.findById(request.getCustomerId())
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+        order.setCustomer(customer);
 
-        existingOrder.setCustomer(customer);
-        existingOrder.setItem(item);
-        existingOrder.setQuantity(request.getQuantity());
+        // Kembalikan stok dari item-item yang ada di order lama
+        List<OrderItem> oldOrderItems = order.getOrderItems();
+        for (OrderItem oldOrderItem : oldOrderItems) {
+            Item item = oldOrderItem.getItem();
+            item.setStock(item.getStock() + oldOrderItem.getQuantity());
+            itemRepository.save(item); // Simpan perubahan stok
+        }
 
-        return orderRepository.save(existingOrder);
+        // Hapus order items lama
+        orderItemRepository.deleteAll(order.getOrderItems());
+
+        // Tambahkan item baru ke order
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (OrderItemRequest itemDTO : request.getOrderItems()) {
+            Item item = itemRepository.findById(itemDTO.getItemId())
+                    .orElseThrow(() -> new RuntimeException("Item not found"));
+
+            if (item.getStock() < itemDTO.getQuantity()) {
+                throw new RuntimeException("Insufficient stock for item: " + item.getName());
+            }
+
+            // Kurangi stok item
+            item.setStock(item.getStock() - itemDTO.getQuantity());
+            itemRepository.save(item); // Simpan perubahan stok
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setItem(item);
+            orderItem.setQuantity(itemDTO.getQuantity());
+            orderItems.add(orderItem);
+        }
+
+        // Set order items ke order
+        order.setOrderItems(orderItems);
+
+        // Simpan order ke database
+        return orderRepository.save(order);
     }
 
     public void deleteOrder(Long orderId){
@@ -127,5 +187,58 @@ public class OrderService {
         }else {
             throw new RuntimeException("Order with ID " + orderId + "not found");
         }
+    }
+
+    public List<Order> getOrderByCustomerId(Long customerId){
+        List<Order> optionalOrder = orderRepository.findOrderByCustomerId(customerId);
+        return optionalOrder;
+    }
+
+    private String generateOrderCode() {
+        String prefix = "TRX-";
+        Optional<String> lastCodeOptional = orderRepository.findLastOrderCode(prefix);
+
+        int newCodeNumber = 1;
+        if (lastCodeOptional.isPresent()) {
+            String lastCode = lastCodeOptional.get();
+            String[] parts = lastCode.split("-");
+            if (parts.length == 2) {
+                try {
+                    newCodeNumber = Integer.parseInt(parts[1]) + 1;
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("Failed to generate code: ", e);
+                }
+            }
+        }
+
+        return prefix + String.format("%05d", newCodeNumber);
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<OrderSummary> getOrderSummaries() {
+        List<Order> orders = orderRepository.findAll();
+        return orders.stream()
+                .map(this::mapToOrderSummaryDTO)
+                .collect(Collectors.toList());
+    }
+
+    private OrderSummary mapToOrderSummaryDTO(Order order) {
+        OrderSummary dto = new OrderSummary();
+        dto.setOrderId(order.getId());
+        dto.setOrderDate(order.getOrderDate());
+        dto.setOrderCode(order.getCode());
+        dto.setCustomerName(order.getCustomer().getName());
+
+        int totalQuantity = order.getOrderItems().stream()
+                .mapToInt(OrderItem::getQuantity)
+                .sum();
+        dto.setTotalQuantity(totalQuantity);
+
+        double totalAmount = order.getOrderItems().stream()
+                .mapToDouble(item -> item.getQuantity() * item.getItem().getPrice())
+                .sum();
+        dto.setTotalAmount(totalAmount);
+
+        return dto;
     }
 }

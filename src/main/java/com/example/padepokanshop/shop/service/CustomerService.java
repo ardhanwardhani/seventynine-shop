@@ -31,19 +31,19 @@ public class CustomerService {
 
     public CustomerResponse createCustomer(CustomerRequest request){
         Customer customer = new Customer();
+        customer.setCode(generateCustomerCode());
         customer.setName(request.getName());
         customer.setPhone(request.getPhone());
         customer.setAddress(request.getAddress());
-        customer.setCode(request.getCode());
         customer.setPic(request.getPic());
         customer.setIsActive(true);
 
         Customer savedCustomer = customerRepository.save(customer);
         return new CustomerResponse(
+                savedCustomer.getCode(),
                 savedCustomer.getName(),
                 savedCustomer.getPhone(),
                 savedCustomer.getAddress(),
-                savedCustomer.getCode(),
                 savedCustomer.getPic(),
                 savedCustomer.getIsActive(),
                 savedCustomer.getLastOrderDate()
@@ -58,7 +58,6 @@ public class CustomerService {
             existingCustomer.setName(request.getName());
             existingCustomer.setPhone(request.getPhone());
             existingCustomer.setAddress(request.getAddress());
-            existingCustomer.setCode(request.getCode());
             existingCustomer.setPic(request.getPic());
             existingCustomer.setIsActive(request.getIsActive());
 
@@ -85,6 +84,26 @@ public class CustomerService {
         }else {
             throw new RuntimeException("Customer with ID" + id + "not found");
         }
+    }
+
+    private String generateCustomerCode() {
+        String prefix = "C-";
+        Optional<String> lastCodeOptional = customerRepository.findLastCustomerCode(prefix);
+
+        int newCodeNumber = 1;
+        if (lastCodeOptional.isPresent()) {
+            String lastCode = lastCodeOptional.get();
+            String[] parts = lastCode.split("-");
+            if (parts.length == 2) {
+                try {
+                    newCodeNumber = Integer.parseInt(parts[1]) + 1;
+                } catch (NumberFormatException e) {
+                    // Handle error appropriately
+                }
+            }
+        }
+
+        return prefix + String.format("%05d", newCodeNumber);
     }
 
 }

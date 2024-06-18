@@ -6,19 +6,19 @@ import java.util.Date;
 
 @Data
 public class CustomerResponse {
+    private String code;
     private String name;
     private String phone;
     private String address;
-    private String code;
     private String pic;
     private Boolean isActive;
     private Date lastOrderDate;
 
-    public CustomerResponse(String name, String phone, String address, String code, String pic, Boolean isActive, Date lastOrderDate){
+    public CustomerResponse(String code, String name, String phone, String address, String pic, Boolean isActive, Date lastOrderDate){
+        this.code = code;
         this.name = name;
         this.phone = phone;
         this.address = address;
-        this.code = code;
         this.pic = pic;
         this.isActive = isActive;
         this.lastOrderDate = lastOrderDate;

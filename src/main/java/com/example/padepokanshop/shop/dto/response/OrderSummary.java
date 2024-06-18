@@ -1,18 +1,18 @@
 package com.example.padepokanshop.shop.dto.response;
 
-import lombok.AllArgsConstructor;
+import com.example.padepokanshop.shop.model.Customer;
+import com.example.padepokanshop.shop.model.OrderItem;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class TransactionReport {
+public class OrderSummary {
+    private Long orderId;
     private Date orderDate;
     private String orderCode;
     private String customerName;
-    private Long itemsQuantity;
+    private Integer totalQuantity;
     private Double totalAmount;
 }

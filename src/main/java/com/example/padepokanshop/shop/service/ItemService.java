@@ -33,7 +33,7 @@ public class ItemService {
     public ItemResponse createItem(ItemRequest request){
         Item item = new Item();
         item.setName(request.getName());
-        item.setCode(request.getCode());
+        item.setCode(generateItemCode());
         item.setPrice(request.getPrice());
         item.setStock(request.getStock());
         item.setIsAvailable(true);
@@ -55,7 +55,6 @@ public class ItemService {
         if (optionalItem.isPresent()){
             Item existingItem = optionalItem.get();
             existingItem.setName(request.getName());
-            existingItem.setCode(request.getCode());
             existingItem.setPrice(request.getPrice());
             existingItem.setStock(request.getStock());
             existingItem.setIsAvailable(request.getIsAvailable());
@@ -82,6 +81,26 @@ public class ItemService {
         }else {
             throw new RuntimeException("Item with ID" + id + "not found");
         }
+    }
+
+    private String generateItemCode() {
+        String prefix = "I-";
+        Optional<String> lastCodeOptional = itemRepository.findLastItemCode(prefix);
+
+        int newCodeNumber = 1;
+        if (lastCodeOptional.isPresent()) {
+            String lastCode = lastCodeOptional.get();
+            String[] parts = lastCode.split("-");
+            if (parts.length == 2) {
+                try {
+                    newCodeNumber = Integer.parseInt(parts[1]) + 1;
+                } catch (NumberFormatException e) {
+                    // Handle error appropriately
+                }
+            }
+        }
+
+        return prefix + String.format("%05d", newCodeNumber);
     }
 
 }

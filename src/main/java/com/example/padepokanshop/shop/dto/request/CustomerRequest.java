@@ -7,7 +7,6 @@ public class CustomerRequest {
     private String name;
     private String phone;
     private String address;
-    private String code;
     private String pic;
     private Boolean isActive;
 }

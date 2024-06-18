@@ -6,16 +6,16 @@ import java.util.Date;
 
 @Data
 public class ItemResponse {
-    private String name;
     private String code;
+    private String name;
     private Double price;
     private Integer stock;
     private Date lastRestock;
     private Boolean isAvailable;
 
-    public ItemResponse(String name, String code, Double price, Integer stock, Date lastRestock, Boolean isAvailable){
-        this.name = name;
+    public ItemResponse(String code, String name, Double price, Integer stock, Date lastRestock, Boolean isAvailable){
         this.code = code;
+        this.name = name;
         this.price = price;
         this.stock = stock;
         this.lastRestock = lastRestock;

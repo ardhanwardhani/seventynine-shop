@@ -1,13 +1,12 @@
 package com.example.padepokanshop.shop.controller;
 
 import com.example.padepokanshop.shop.dto.request.ItemRequest;
-import com.example.padepokanshop.shop.dto.response.CustomerResponse;
 import com.example.padepokanshop.shop.dto.response.ItemResponse;
 import com.example.padepokanshop.shop.model.Item;
 import com.example.padepokanshop.shop.service.ItemService;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,25 +14,30 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/item")
+@RequestMapping(value = "/item", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ItemController {
-    @Autowired
-    ItemService itemService;
+    private final ItemService itemService;
 
-    @GetMapping("/list")
-    public ResponseEntity<Object> listItems(){
-        try{
-            List<Item> items = itemService.getAllItem();
-            if (items.isEmpty()){
-                return ResponseEntity.ok("No items found");
-            }
-            return ResponseEntity.ok(items);
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching items");
-        }
+    @Autowired
+    public ItemController(ItemService itemService) {
+        this.itemService = itemService;
     }
 
-    @GetMapping("/detail/{id}")
+    @GetMapping("/list")
+    public ResponseEntity<List<Item>> listItems(){
+        return ResponseEntity.ok(itemService.getAllItem());
+//        try{
+//            List<Item> items = itemService.getAllItem();
+//            if (items.isEmpty()){
+//                return ResponseEntity.ok("No items found");
+//            }
+//            return ResponseEntity.ok(items);
+//        }catch (Exception e){
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching items");
+//        }
+    }
+
+    @GetMapping("/{id}")
     public ResponseEntity<Item> getItemById(@PathVariable Long id){
         try{
             return itemService.getItemById(id).map(ResponseEntity::ok)
@@ -49,7 +53,7 @@ public class ItemController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @PutMapping("/update/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<ItemResponse> updateItem(@PathVariable Long id, @RequestBody ItemRequest request){
         try{
             ItemResponse response = itemService.updateItems(id, request);
@@ -59,7 +63,7 @@ public class ItemController {
         }
     }
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteItem(@PathVariable Long id){
         Optional<Item> item = itemService.getItemById(id);
 

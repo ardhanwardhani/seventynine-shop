@@ -1,8 +1,8 @@
 package com.example.padepokanshop.shop.controller;
 
 import com.example.padepokanshop.shop.dto.request.OrderCreateRequest;
-import com.example.padepokanshop.shop.dto.request.OrderItemRequest;
 import com.example.padepokanshop.shop.dto.request.OrderUpdateRequest;
+import com.example.padepokanshop.shop.dto.response.OrderSummary;
 import com.example.padepokanshop.shop.model.Order;
 import com.example.padepokanshop.shop.service.OrderService;
 import com.example.padepokanshop.shop.service.ReportService;
@@ -17,7 +17,7 @@ import java.util.Date;
 import java.util.List;
 
 @RestController
-@RequestMapping("/order")
+@RequestMapping(value = "/order", produces = MediaType.APPLICATION_JSON_VALUE)
 public class OrderController {
     @Autowired
     private OrderService orderService;
@@ -25,12 +25,18 @@ public class OrderController {
     @Autowired
     private ReportService reportService;
 
+//    @GetMapping("/list")
+//    public List<Order> getAllOrders(){
+//        return orderService.getAllOrders();
+//    }
+
     @GetMapping("/list")
-    public List<Order> getAllOrders(){
-        return orderService.getAllOrders();
+    public ResponseEntity<List<OrderSummary>> getOrderSummaries() {
+        List<OrderSummary> orderSummaries = orderService.getOrderSummaries();
+        return ResponseEntity.ok(orderSummaries);
     }
 
-    @GetMapping("/detail/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Order> getOrderById(@PathVariable Long id){
         try{
             return orderService.getOrderById(id).map(ResponseEntity::ok).orElse(
@@ -42,19 +48,12 @@ public class OrderController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Object> createBulkOrders(@RequestBody OrderCreateRequest request){
-        try{
-            List<OrderItemRequest> orderItems = request.getItems();
-            List<Order> createOrders = orderService.createBulkOrders(orderItems, request.getCustomerId());
-            return ResponseEntity.ok(createOrders);
-        }catch (IllegalArgumentException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
+    public ResponseEntity<Order> createOrder(@RequestBody OrderCreateRequest request) {
+        Order order = orderService.createOrder(request);
+        return new ResponseEntity<>(order, HttpStatus.CREATED);
     }
 
-    @PutMapping("/update/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<Order> updateOrder(@PathVariable Long orderId, @RequestBody OrderUpdateRequest request){
         if (orderService.getOrderById(orderId).isEmpty()){
             return ResponseEntity.notFound().build();
@@ -64,7 +63,7 @@ public class OrderController {
         return ResponseEntity.ok(updateOrder);
     }
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteOrder(@PathVariable Long id){
         if(orderService.getOrderById(id).isEmpty()){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete order");

@@ -3,21 +3,27 @@ package com.example.padepokanshop.shop.controller;
 import com.example.padepokanshop.shop.dto.request.CustomerRequest;
 import com.example.padepokanshop.shop.dto.response.CustomerResponse;
 import com.example.padepokanshop.shop.model.Customer;
+import com.example.padepokanshop.shop.model.Order;
 import com.example.padepokanshop.shop.service.CustomerService;
+import com.example.padepokanshop.shop.service.OrderService;
 import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/customer")
+@RequestMapping(value = "/customer", produces = MediaType.APPLICATION_JSON_VALUE)
 public class CustomerController {
     @Autowired
     CustomerService customerService;
+    @Autowired
+    private OrderService orderService;
 
     @GetMapping("/list")
     public ResponseEntity<Object> listCustomers(){
@@ -34,7 +40,7 @@ public class CustomerController {
         }
     }
 
-    @GetMapping("/detail/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Customer> getCustomerById(@PathVariable Long id){
         try{
             return customerService.getCustomerById(id).map(ResponseEntity::ok)
@@ -50,7 +56,7 @@ public class CustomerController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @PutMapping("/update/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<CustomerResponse> updateCustomer(@PathVariable Long id, @RequestBody CustomerRequest request){
         try{
             CustomerResponse response = customerService.updateCustomer(id, request);
@@ -60,12 +66,17 @@ public class CustomerController {
         }
     }
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteCustomer(@PathVariable Long id){
         Optional<Customer> customer = customerService.getCustomerById(id);
+        List<Order> orders = orderService.getOrderByCustomerId(id);
+
+        if (!orders.isEmpty()) {
+            return ResponseEntity.badRequest().body("Can't delete customer with id " + id + " because the customer has order data");
+        }
 
         if (customer.isEmpty()){
-            return ResponseEntity.ok("Failed to delete customer");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Can't delete customer with id " + id);
         }
 
         customerService.deleteCustomer(id);

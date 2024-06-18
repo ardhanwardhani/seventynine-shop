@@ -2,9 +2,10 @@ package com.example.padepokanshop.shop.dto.request;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class OrderUpdateRequest {
     private Long customerId;
-    private Long itemId;
-    private Integer quantity;
+    private List<OrderItemRequest> orderItems;
 }

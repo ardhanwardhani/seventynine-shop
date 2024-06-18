@@ -11,20 +11,20 @@ import java.util.Date;
 @Entity
 @Table(name = "items")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "items_id")
+    @Column(name = "item_id")
     private Long id;
 
-    @Column(name = "items_name", nullable = false)
-    private String name;
-
-    @Column(name = "items_code", nullable = false)
+    @Column(name = "item_code", nullable = false)
     private String code;
+
+    @Column(name = "item_name", nullable = false)
+    private String name;
 
     @Column(nullable = false)
     private Double price;
@@ -32,8 +32,9 @@ public class Item {
     @Column(nullable = false)
     private Integer stock;
 
-    @Column(name = "last_re_stock")
+    @Column(name = "last_restock")
     private Date lastRestock;
 
+    @Column(name = "is_available")
     private Boolean isAvailable;
 }
