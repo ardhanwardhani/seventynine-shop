@@ -25,11 +25,6 @@ public class OrderController {
     @Autowired
     private ReportService reportService;
 
-//    @GetMapping("/list")
-//    public List<Order> getAllOrders(){
-//        return orderService.getAllOrders();
-//    }
-
     @GetMapping("/list")
     public ResponseEntity<List<OrderSummary>> getOrderSummaries() {
         List<OrderSummary> orderSummaries = orderService.getOrderSummaries();
@@ -91,10 +86,5 @@ public class OrderController {
                                 .filename("weekly-report.pdf")
                                 .build().toString())
                 .body(resource);
-
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.add("Content-Type", "application/pdf");
-//        headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=transactionReport.pdf");
-//        return ResponseEntity.ok().headers(headers).body(reportContent);
     }
 }

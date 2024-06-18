@@ -26,15 +26,6 @@ public class ItemController {
     @GetMapping("/list")
     public ResponseEntity<List<Item>> listItems(){
         return ResponseEntity.ok(itemService.getAllItem());
-//        try{
-//            List<Item> items = itemService.getAllItem();
-//            if (items.isEmpty()){
-//                return ResponseEntity.ok("No items found");
-//            }
-//            return ResponseEntity.ok(items);
-//        }catch (Exception e){
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching items");
-//        }
     }
 
     @GetMapping("/{id}")

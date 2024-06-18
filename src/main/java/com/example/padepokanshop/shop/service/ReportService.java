@@ -30,12 +30,10 @@ public class ReportService {
             File file = ResourceUtils.getFile("src/main/resources/templates/OrderReport.jrxml");
             JasperReport jasperReport = JasperCompileManager.compileReport(file.getAbsolutePath());
 
-            // Set report data
             JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(transactionReports);
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("title", "Order Report");
 
-            // Fill report
             JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
 
             byte[] reportContent = JasperExportManager.exportReportToPdf(jasperPrint);
