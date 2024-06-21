@@ -4,6 +4,7 @@ import com.example.padepokanshop.shop.dto.request.ItemRequest;
 import com.example.padepokanshop.shop.dto.response.ItemResponse;
 import com.example.padepokanshop.shop.model.Item;
 import com.example.padepokanshop.shop.service.ItemService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,13 +40,13 @@ public class ItemController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ItemResponse> createItem(@RequestBody ItemRequest request){
+    public ResponseEntity<ItemResponse> createItem(@Valid @RequestBody ItemRequest request){
         ItemResponse response = itemService.createItem(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ItemResponse> updateItem(@PathVariable Long id, @RequestBody ItemRequest request){
+    public ResponseEntity<ItemResponse> updateItem(@Valid @PathVariable Long id, @RequestBody ItemRequest request){
         try{
             ItemResponse response = itemService.updateItems(id, request);
             return new ResponseEntity<>(response, HttpStatus.OK);

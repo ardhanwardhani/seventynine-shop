@@ -23,16 +23,16 @@ public class Customer {
     @Column(name = "customer_name", nullable = false)
     private String name;
 
-    @Column(name = "customer_phone")
+    @Column(name = "customer_phone", nullable = false)
     private String phone;
 
-    @Column(name = "customer_address")
+    @Column(name = "customer_address", nullable = false)
     private String address;
 
     @Column(name = "customer_code", nullable = false)
     private String code;
 
-    private String pic;
+    private String imageUrl;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "last_order_date")

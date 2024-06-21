@@ -2,10 +2,12 @@ package com.example.padepokanshop.shop.controller;
 
 import com.example.padepokanshop.shop.dto.request.OrderCreateRequest;
 import com.example.padepokanshop.shop.dto.request.OrderUpdateRequest;
+import com.example.padepokanshop.shop.dto.response.OrderResponse;
 import com.example.padepokanshop.shop.dto.response.OrderSummary;
 import com.example.padepokanshop.shop.model.Order;
 import com.example.padepokanshop.shop.service.OrderService;
 import com.example.padepokanshop.shop.service.ReportService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -32,37 +34,30 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrderById(@PathVariable Long id){
-        try{
-            return orderService.getOrderById(id).map(ResponseEntity::ok).orElse(
-                    ResponseEntity.notFound().build()
-            );
-        }catch (Exception e){
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long id) {
+        try {
+            return orderService.getOrderById(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Order> createOrder(@RequestBody OrderCreateRequest request) {
+    public ResponseEntity<Order> createOrder(@Valid @RequestBody OrderCreateRequest request) {
         Order order = orderService.createOrder(request);
         return new ResponseEntity<>(order, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Order> updateOrder(@PathVariable Long orderId, @RequestBody OrderUpdateRequest request){
-        if (orderService.getOrderById(orderId).isEmpty()){
-            return ResponseEntity.notFound().build();
-        }
-
-        Order updateOrder = orderService.updateOrder(orderId, request);
+    public ResponseEntity<Order> updateOrder(@Valid @PathVariable Long id, @RequestBody OrderUpdateRequest request){
+        Order updateOrder = orderService.updateOrder(id, request);
         return ResponseEntity.ok(updateOrder);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteOrder(@PathVariable Long id){
-        if(orderService.getOrderById(id).isEmpty()){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete order");
-        }
         orderService.deleteOrder(id);
         return ResponseEntity.ok("Deleted order succesfully");
     }

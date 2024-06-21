@@ -3,6 +3,8 @@ package com.example.padepokanshop.shop.service;
 import com.example.padepokanshop.shop.dto.request.OrderCreateRequest;
 import com.example.padepokanshop.shop.dto.request.OrderItemRequest;
 import com.example.padepokanshop.shop.dto.request.OrderUpdateRequest;
+import com.example.padepokanshop.shop.dto.response.OrderItemResponse;
+import com.example.padepokanshop.shop.dto.response.OrderResponse;
 import com.example.padepokanshop.shop.dto.response.OrderSummary;
 import com.example.padepokanshop.shop.model.Customer;
 import com.example.padepokanshop.shop.model.Item;
@@ -45,10 +47,32 @@ public class OrderService {
         return orderRepository.findAll();
     }
 
-    public Optional<Order> getOrderById(Long id){
-        return Optional.ofNullable(orderRepository.findById(id).orElseThrow(
-                () -> new RuntimeException("Order with ID" + id + "not found")
-        ));
+    public Optional<OrderResponse> getOrderById(Long id) {
+        return orderRepository.findById(id).map(this::convertToDTO);
+    }
+
+    private OrderResponse convertToDTO(Order order) {
+        OrderResponse orderDTO = new OrderResponse();
+        orderDTO.setOrderId(order.getId());
+        orderDTO.setOrderCode(order.getCode());
+        orderDTO.setOrderDate(order.getOrderDate());
+        orderDTO.setCustomerId(order.getCustomer().getId());
+        orderDTO.setCustomerName(order.getCustomer().getName());
+        orderDTO.setOrderItems(order.getOrderItems().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList()));
+        return orderDTO;
+    }
+
+    private OrderItemResponse convertToDTO(OrderItem orderItem) {
+        OrderItemResponse orderItemDTO = new OrderItemResponse();
+        orderItemDTO.setOrderItemId(orderItem.getId());
+        orderItemDTO.setItemId(orderItem.getItem().getId());
+        orderItemDTO.setItemCode(orderItem.getItem().getCode());
+        orderItemDTO.setItemName(orderItem.getItem().getName());
+        orderItemDTO.setPrice(orderItem.getItem().getPrice());
+        orderItemDTO.setQuantity(orderItem.getQuantity());
+        return orderItemDTO;
     }
 
     @Transactional
@@ -109,7 +133,7 @@ public class OrderService {
         orderItemRepository.deleteAll(order.getOrderItems());
 
         List<OrderItem> orderItems = new ArrayList<>();
-        for (OrderItemRequest itemDTO : request.getOrderItems()) {
+        for (OrderItemRequest itemDTO : request.getItems()) {
             Item item = itemRepository.findById(itemDTO.getItemId())
                     .orElseThrow(() -> new RuntimeException("Item not found"));
 

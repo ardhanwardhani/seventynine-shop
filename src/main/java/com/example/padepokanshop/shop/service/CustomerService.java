@@ -6,6 +6,7 @@ import com.example.padepokanshop.shop.model.Customer;
 import com.example.padepokanshop.shop.repository.CustomerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,9 +15,12 @@ import java.util.Optional;
 public class CustomerService {
     private final CustomerRepository customerRepository;
 
+    private final ImageStorageService imageStorageService;
+
     @Autowired
-    public CustomerService(CustomerRepository customerRepository){
+    public CustomerService(CustomerRepository customerRepository, ImageStorageService imageStorageService){
         this.customerRepository = customerRepository;
+        this.imageStorageService = imageStorageService;
     }
 
     public List<Customer> getAllCustomers(){
@@ -29,25 +33,31 @@ public class CustomerService {
                         -> new RuntimeException("Customer with ID" + id + "Not Found")));
     }
 
-    public CustomerResponse createCustomer(CustomerRequest request){
-        Customer customer = new Customer();
-        customer.setCode(generateCustomerCode());
-        customer.setName(request.getName());
-        customer.setPhone(request.getPhone());
-        customer.setAddress(request.getAddress());
-        customer.setPic(request.getPic());
-        customer.setIsActive(true);
+    public CustomerResponse createCustomer(CustomerRequest request, MultipartFile imageFile){
+        try{
+            String imageUrl = imageStorageService.uploadImage(imageFile);
 
-        Customer savedCustomer = customerRepository.save(customer);
-        return new CustomerResponse(
-                savedCustomer.getCode(),
-                savedCustomer.getName(),
-                savedCustomer.getPhone(),
-                savedCustomer.getAddress(),
-                savedCustomer.getPic(),
-                savedCustomer.getIsActive(),
-                savedCustomer.getLastOrderDate()
-        );
+            Customer customer = new Customer();
+            customer.setCode(generateCustomerCode());
+            customer.setName(request.getName());
+            customer.setPhone(request.getPhone());
+            customer.setAddress(request.getAddress());
+            customer.setImageUrl(imageUrl);
+            customer.setIsActive(true);
+
+            Customer savedCustomer = customerRepository.save(customer);
+            return new CustomerResponse(
+                    savedCustomer.getCode(),
+                    savedCustomer.getName(),
+                    savedCustomer.getPhone(),
+                    savedCustomer.getAddress(),
+                    savedCustomer.getImageUrl(),
+                    savedCustomer.getIsActive(),
+                    savedCustomer.getLastOrderDate()
+            );
+        }catch (Exception e){
+            throw new RuntimeException("Failed to save customer");
+        }
     }
 
     public CustomerResponse updateCustomer(Long id, CustomerRequest request){
@@ -58,7 +68,7 @@ public class CustomerService {
             existingCustomer.setName(request.getName());
             existingCustomer.setPhone(request.getPhone());
             existingCustomer.setAddress(request.getAddress());
-            existingCustomer.setPic(request.getPic());
+            existingCustomer.setImageUrl(request.getImageUrl());
             existingCustomer.setIsActive(request.getIsActive());
 
             Customer updatedCustomer = customerRepository.save(existingCustomer);
@@ -68,7 +78,7 @@ public class CustomerService {
                     updatedCustomer.getPhone(),
                     updatedCustomer.getAddress(),
                     updatedCustomer.getCode(),
-                    updatedCustomer.getPic(),
+                    updatedCustomer.getImageUrl(),
                     updatedCustomer.getIsActive(),
                     updatedCustomer.getLastOrderDate()
             );
