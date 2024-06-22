@@ -24,10 +24,40 @@ public class CustomerController {
     @Autowired
     private OrderService orderService;
 
-    @GetMapping("/list")
+    @GetMapping("/list-customers")
     public ResponseEntity<Object> listCustomers(){
         try{
             List<Customer> customers = customerService.getAllCustomers();
+            if (customers.isEmpty()){
+                String message = "No customer found";
+                return ResponseEntity.ok(message);
+            }
+            return ResponseEntity.ok(customers);
+        }catch (Exception e){
+            String errorMessage = "Error fetching customer";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage);
+        }
+    }
+
+    @GetMapping("/list-active-customers")
+    public ResponseEntity<Object> listActiveCustomers(){
+        try{
+            List<Customer> customers = customerService.getActiveCustomers();
+            if (customers.isEmpty()){
+                String message = "No customer found";
+                return ResponseEntity.ok(message);
+            }
+            return ResponseEntity.ok(customers);
+        }catch (Exception e){
+            String errorMessage = "Error fetching customer";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage);
+        }
+    }
+
+    @GetMapping("/list-deactive-customers")
+    public ResponseEntity<Object> listDeactiveCustomers(){
+        try{
+            List<Customer> customers = customerService.getDeactiveCustomers();
             if (customers.isEmpty()){
                 String message = "No customer found";
                 return ResponseEntity.ok(message);
@@ -55,18 +85,50 @@ public class CustomerController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<CustomerResponse> updateCustomer(@Valid @PathVariable Long id, @RequestBody CustomerRequest request){
+    @PutMapping(value = "/{id}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<CustomerResponse> updateCustomer(@Valid @PathVariable Long id, @RequestPart("customer") CustomerRequest request, @RequestPart("image") MultipartFile image){
         try{
-            CustomerResponse response = customerService.updateCustomer(id, request);
+            CustomerResponse response = customerService.updateCustomer(id, request, image);
             return new ResponseEntity<>(response, HttpStatus.OK);
         }catch (RuntimeException e){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
+    @PatchMapping("/{id}/activate-customer")
+    public ResponseEntity<Map<String, String>> activateCustomer(@PathVariable Long id) {
+        Optional<Customer> optionalCustomer = customerService.getCustomerById(id);
+
+        if (optionalCustomer.isEmpty()) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Customer with ID " + id + " is not found");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        customerService.activateCustomer(id);
+        Map<String, String> successResponse = new HashMap<>();
+        successResponse.put("message", "Customer activated successfully");
+        return ResponseEntity.ok(successResponse);
+    }
+
+    @PatchMapping("/{id}/deactive-customer")
+    public ResponseEntity<Map<String, String>> softDeleteCustomer(@PathVariable Long id) {
+        Optional<Customer> optionalCustomer = customerService.getCustomerById(id);
+
+        if (optionalCustomer.isEmpty()) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Customer with ID " + id + " is not found");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        customerService.deactivateCustomer(id);
+        Map<String, String> successResponse = new HashMap<>();
+        successResponse.put("message", "Customer deleted successfully");
+        return ResponseEntity.ok(successResponse);
+    }
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteCustomer(@PathVariable Long id){
+    public ResponseEntity<Object> deleteCustomer(@PathVariable Long id){
         Optional<Customer> customer = customerService.getCustomerById(id);
         List<Order> orders = orderService.getOrderByCustomerId(id);
 

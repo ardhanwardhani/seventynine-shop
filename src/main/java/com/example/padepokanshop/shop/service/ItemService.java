@@ -23,6 +23,14 @@ public class ItemService {
         return itemRepository.findAll();
     }
 
+    public List<Item> getAvailableItems(){
+        return itemRepository.findByIsAvailableTrue();
+    }
+
+    public List<Item> getUnavailableItems(){
+        return itemRepository.findByIsAvailableFalse();
+    }
+
     public Optional<Item> getItemById(Long id){
         return Optional.ofNullable(itemRepository.findById(id).orElseThrow(
                 ()
@@ -72,6 +80,30 @@ public class ItemService {
         }else {
             throw new RuntimeException("Item with ID" + id + "not found");
         }
+    }
+
+    public void availableItem(Long id){
+        Optional<Item> optionalItem = itemRepository.findById(id);
+
+        if (optionalItem.isEmpty()){
+            throw new RuntimeException("Item with ID " + id + " is not found");
+        }
+
+        Item item = optionalItem.get();
+        item.setIsAvailable(true);
+        itemRepository.save(item);
+    }
+
+    public void unavailableItem(Long id){
+        Optional<Item> optionalItem = itemRepository.findById(id);
+
+        if (optionalItem.isEmpty()){
+            throw new RuntimeException("Item with ID " + id + " is not found");
+        }
+
+        Item item = optionalItem.get();
+        item.setIsAvailable(false);
+        itemRepository.save(item);
     }
 
     public void deleteItem(Long id){

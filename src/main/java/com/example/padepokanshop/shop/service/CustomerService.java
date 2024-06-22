@@ -27,6 +27,14 @@ public class CustomerService {
         return customerRepository.findAll();
     }
 
+    public List<Customer> getActiveCustomers(){
+        return customerRepository.findByIsActiveTrue();
+    }
+
+    public List<Customer> getDeactiveCustomers(){
+        return customerRepository.findByIsActiveFalse();
+    }
+
     public Optional<Customer> getCustomerById(Long id){
         return Optional.ofNullable(customerRepository.findById(id).orElseThrow(
                 ()
@@ -60,31 +68,62 @@ public class CustomerService {
         }
     }
 
-    public CustomerResponse updateCustomer(Long id, CustomerRequest request){
+    public CustomerResponse updateCustomer(Long id, CustomerRequest request, MultipartFile imageFile){
+        Optional<Customer> optionalCustomer = customerRepository.findById(id);
+        if (optionalCustomer.isEmpty()) {
+            throw new RuntimeException("Customer with ID " + id + " not found.");
+        }
+
+        String oldImageUrl= optionalCustomer.get().getImageUrl();
+
+        if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
+            imageStorageService.deleteImage(oldImageUrl);
+        }
+
+        String imageUrl = imageStorageService.uploadImage(imageFile);
+
+        Customer existingCustomer = optionalCustomer.get();
+        existingCustomer.setName(request.getName());
+        existingCustomer.setPhone(request.getPhone());
+        existingCustomer.setAddress(request.getAddress());
+        existingCustomer.setImageUrl(imageUrl);
+        existingCustomer.setIsActive(request.getIsActive());
+
+        Customer updatedCustomer = customerRepository.save(existingCustomer);
+
+        return new CustomerResponse(
+                updatedCustomer.getName(),
+                updatedCustomer.getPhone(),
+                updatedCustomer.getAddress(),
+                updatedCustomer.getCode(),
+                updatedCustomer.getImageUrl(),
+                updatedCustomer.getIsActive(),
+                updatedCustomer.getLastOrderDate()
+        );
+
+    }
+    public void activateCustomer(Long id){
         Optional<Customer> optionalCustomer = customerRepository.findById(id);
 
-        if (optionalCustomer.isPresent()){
-            Customer existingCustomer = optionalCustomer.get();
-            existingCustomer.setName(request.getName());
-            existingCustomer.setPhone(request.getPhone());
-            existingCustomer.setAddress(request.getAddress());
-            existingCustomer.setImageUrl(request.getImageUrl());
-            existingCustomer.setIsActive(request.getIsActive());
-
-            Customer updatedCustomer = customerRepository.save(existingCustomer);
-
-            return new CustomerResponse(
-                    updatedCustomer.getName(),
-                    updatedCustomer.getPhone(),
-                    updatedCustomer.getAddress(),
-                    updatedCustomer.getCode(),
-                    updatedCustomer.getImageUrl(),
-                    updatedCustomer.getIsActive(),
-                    updatedCustomer.getLastOrderDate()
-            );
-        }else {
-            throw new RuntimeException("Customer with ID" + id + "not found.");
+        if (optionalCustomer.isEmpty()){
+            throw new RuntimeException("Customer with ID " + id +" is not found");
         }
+
+        Customer customer = optionalCustomer.get();
+        customer.setIsActive(true);
+        customerRepository.save(customer);
+    }
+
+    public void deactivateCustomer(Long id){
+        Optional<Customer> optionalCustomer = customerRepository.findById(id);
+
+        if (optionalCustomer.isEmpty()){
+            throw new RuntimeException("Customer with ID " + id + "is not found");
+        }
+
+        Customer customer = optionalCustomer.get();
+        customer.setIsActive(false);
+        customerRepository.save(customer);
     }
 
     public void deleteCustomer(Long id){

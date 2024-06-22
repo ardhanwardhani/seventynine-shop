@@ -2,6 +2,7 @@ package com.example.padepokanshop.shop.service;
 
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,23 @@ public class ImageStorageService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to store image file.", e);
         }
+    }
+
+    public void deleteImage(String imageUrl) {
+        String fileName = extractFileName(imageUrl);
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(fileName)
+                            .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete image file.", e);
+        }
+    }
+
+    private String extractFileName(String imageUrl) {
+        return imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
     }
 
     private String generateFileName(MultipartFile file) {
