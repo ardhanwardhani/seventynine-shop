@@ -26,3 +26,6 @@ V 3.0
 V 3.1
 - Soft Delete Customer & Items
 - Bug Fixing
+
+V 3.2
+- Dashboard
