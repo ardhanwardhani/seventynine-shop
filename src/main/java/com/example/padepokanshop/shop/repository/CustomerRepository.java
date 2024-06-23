@@ -15,4 +15,13 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> findByIsActiveTrue();
 
     List<Customer> findByIsActiveFalse();
+
+    @Query("SELECT COUNT(c) FROM Customer c")
+    Long countAllCustomers();
+
+    @Query("SELECT COUNT(c) FROM Customer c WHERE c.isActive = true")
+    Long countActiveCustomers();
+
+    @Query("SELECT COUNT(c) FROM Customer c WHERE c.isActive = false")
+    Long countDeactiveCustomers();
 }

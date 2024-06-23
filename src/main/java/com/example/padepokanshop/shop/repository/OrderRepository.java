@@ -25,4 +25,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query(value = "SELECT o.order_code FROM orders o WHERE o.order_code LIKE :prefix% ORDER BY o.order_id DESC LIMIT 1", nativeQuery = true)
     Optional<String> findLastOrderCode(@Param("prefix") String prefix);
 
+    @Query("SELECT COUNT(o) FROM Order o")
+    Long countAllOrders();
 }

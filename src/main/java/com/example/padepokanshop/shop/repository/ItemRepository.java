@@ -15,4 +15,13 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     List<Item> findByIsAvailableTrue();
 
     List<Item> findByIsAvailableFalse();
+
+    @Query("SELECT COUNT(i) FROM Item i")
+    Long countAllItems();
+
+    @Query("SELECT COUNT(i) FROM Item i WHERE i.isAvailable = true AND i.stock > 0")
+    Long countAvailableItems();
+
+    @Query("SELECT COUNT(i) FROM Item i WHERE i.isAvailable = false AND i.stock = 0")
+    Long countUnavailableItems();
 }
